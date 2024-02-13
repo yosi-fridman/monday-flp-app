@@ -2,16 +2,38 @@ import { useState, useEffect } from 'react'
 import './App.css'
 import mondaySdk from "monday-sdk-js";
 import "monday-ui-react-core/dist/main.css";
-import { BaseContext } from 'monday-sdk-js/types/client-context.type';
+import { AppFeatureItemMenuActionContext, BaseContext } from 'monday-sdk-js/types/client-context.type';
+
 //Explore more Monday React Components here: https://style.monday.com/
 // import AttentionBox from "monday-ui-react-core/dist/AttentionBox.js";
 
 // Usage of mondaySDK example, for more information visit here: https://developer.monday.com/apps/docs/introduction-to-the-sdk/
 const monday = mondaySdk();
 
+const test = async (boardItemContext: AppFeatureItemMenuActionContext) => {
+  debugger
+  const query: string = `query {
+    items (ids: ${boardItemContext.itemId}) {
+      name,
+      column_values{
+        value,
+        type,
+        text
+      }
+    }
+  }`;
+
+  const response = await monday.api(query);
+  console.log(response);
+
+  return response;
+
+
+}
+
 function App() {
 
-  const [context, setContext] = useState<BaseContext | null>(null);
+  const [context, setContext] = useState<AppFeatureItemMenuActionContext | BaseContext | null>(null);
 
   useEffect(() => {
     // Notice this method notifies the monday platform that user gains a first value in an app.
@@ -36,8 +58,14 @@ function App() {
       <div>
         {attentionBoxText}
       </div>
-      <button>
-        sss
+
+      <button onClick={() => {
+        console.log(context);
+
+        test(context);
+
+      }}>
+        console log context
       </button>
     </div>
 
