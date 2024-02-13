@@ -1,0 +1,39 @@
+{
+  "name": "monday-flp-app",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "start": "npm run stop && concurrently \"npm run dev\" \"npm run expose\"",
+    "build": "tsc && vite build",
+    "expose": "mapps tunnel:create -p 8301",
+    "stop": "kill-port 8301 && kill-port 4049 && kill-port 4040",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@mondaycom/apps-sdk": "^2.1.2",
+    "monday-sdk-js": "^0.5.0",
+    "monday-ui-react-core": "^1.54.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.55",
+    "@types/react-dom": "^18.2.19",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "eslint": "^8.56.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "typescript": "^5.2.2",
+    "vite": "^5.1.0",
+    "@mondaycom/apps-cli": "^2.0.0",
+    "concurrently": "^5.2.0",
+    "cross-port-killer": "^1.2.1",
+    "eslint-config-react-app": "^7.0.1",
+    "sass": "^1.54.8"
+  }
+}
