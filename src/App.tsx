@@ -10,30 +10,57 @@ import { AppFeatureItemMenuActionContext, BaseContext } from 'monday-sdk-js/type
 // Usage of mondaySDK example, for more information visit here: https://developer.monday.com/apps/docs/introduction-to-the-sdk/
 const monday = mondaySdk();
 
-const test = async (boardItemContext: AppFeatureItemMenuActionContext) => {
-  debugger
-  const query: string = `query {
-    items (ids: ${boardItemContext.itemId}) {
-      name,
-      column_values{
-        value,
-        type,
-        text
-      }
-    }
-  }`;
-
-  const response = await monday.api(query);
-  console.log(response);
-
-  return response;
-
-
-}
-
 function App() {
 
+  type boardItemType = {
+    name: string,
+    column_values: {
+      column: {
+        id: string,
+        title: string
+      },
+      text: string,
+      value: string
+    }[]
+  }
+
   const [context, setContext] = useState<AppFeatureItemMenuActionContext | BaseContext | null>(null);
+
+  const [boardItem, setBoardItem] = useState<boardItemType | null>(null);
+
+  const [navigationValue, setNavigationValue] = useState<string | null>(null);
+
+
+  const getBoardItem = async (boardItemContext: AppFeatureItemMenuActionContext) => {
+    debugger
+    const query: string = `query {
+      items (ids: ${boardItemContext.itemId}) {
+        name
+        column_values {
+          column {
+            id
+            title
+          }
+          value
+          text
+        }
+      }
+    }`;
+
+    const response = await monday.api(query);
+    console.log(response);
+
+    const item: boardItemType = response?.data?.items[0]
+
+    const oNavigationCol = item.column_values.find(obj => { return obj.column.title === "Notification Number" });
+    const sNavigationValue = oNavigationCol?.text;
+
+    setBoardItem(item);
+    setNavigationValue(sNavigationValue || null);
+
+    return response;
+
+  }
 
   useEffect(() => {
     // Notice this method notifies the monday platform that user gains a first value in an app.
@@ -42,8 +69,8 @@ function App() {
 
     // TODO: set up event listeners, Here`s an example, read more here: https://developer.monday.com/apps/docs/mondaylisten/
     monday.listen("context", (res) => {
-      debugger
       setContext(res.data);
+      getBoardItem(res.data);
     });
   }, []);
 
@@ -56,17 +83,22 @@ function App() {
   return (
     <div className="App">
       <div>
-        {attentionBoxText}
+        {attentionBoxText} {boardItem?.name}
       </div>
 
       <button onClick={() => {
         console.log(context);
 
-        test(context);
-
       }}>
         console log context
       </button>
+
+      <button onClick={() => {
+        alert(`ok navigating to ${navigationValue}`);
+      }}>
+        navigate to {navigationValue}
+      </button>
+
     </div>
 
   );
