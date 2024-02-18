@@ -1,16 +1,30 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import './App.css'
 import mondaySdk from "monday-sdk-js";
 import "monday-ui-react-core/dist/main.css";
 import { AppFeatureItemMenuActionContext, BaseContext } from 'monday-sdk-js/types/client-context.type';
+// import { Dropdown, Button } from "monday-ui-react-core";
+import Dropdown from "monday-ui-react-core/dist/Dropdown.js";
+import Button from "monday-ui-react-core/dist/Button.js";
+import Flex from "monday-ui-react-core/dist/Flex.js";
+
 
 //Explore more Monday React Components here: https://style.monday.com/
-// import AttentionBox from "monday-ui-react-core/dist/AttentionBox.js";
+// import AttentionBox from "monday-ui-react-core/dist/AttentionBox";
 
 // Usage of mondaySDK example, for more information visit here: https://developer.monday.com/apps/docs/introduction-to-the-sdk/
 const monday = mondaySdk();
 
 function App() {
+
+  type boardType = {
+    id: string,
+    name: string,
+    columns: {
+      id: string,
+      title: string
+    }[]
+  }
 
   type boardItemType = {
     name: string,
@@ -24,15 +38,32 @@ function App() {
     }[]
   }
 
+  type navigationSettingsType = {
+    accountId: string | null,
+    boards: {
+      boardId: string,
+      boardName: string,
+      navigationColumns: {
+        columnIndex: number,
+        columnId: string,
+        columnLabel: string
+      }[]
+    }[]
+  }
+
   const [context, setContext] = useState<AppFeatureItemMenuActionContext | BaseContext | null>(null);
+
+  const [boards, setBoards] = useState<boardType[] | null>(null);
 
   const [boardItem, setBoardItem] = useState<boardItemType | null>(null);
 
   const [navigationValue, setNavigationValue] = useState<string | null>(null);
 
+  const [navigationSettings, setNavigationSettings] = useState<navigationSettingsType | null>(null);
+
 
   const getBoardItem = async (boardItemContext: AppFeatureItemMenuActionContext) => {
-    debugger
+
     const query: string = `query {
       items (ids: ${boardItemContext.itemId}) {
         name
@@ -62,27 +93,155 @@ function App() {
 
   }
 
+  const getBoards = async (boardItemContext) => {
+
+    const query: string = `query {
+      boards {
+        id
+        name
+        columns {
+          id
+          title
+        }
+      }
+    }`;
+
+    // monday.setToken("eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjMyMjM1Mzg4NywiYWFpIjoxMSwidWlkIjo1NTU5ODYzNiwiaWFkIjoiMjAyNC0wMi0xN1QyMTo0MzozMC4xNjBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjExOTIxNzksInJnbiI6ImV1YzEifQ.eLZRL9X84fYlRYIT9J2ejADsAUUvG6Y1IGh_E7MIaRg");
+
+    const response = await monday.api(query);
+    console.log(response);
+
+    const boards: boardType[] = response?.data?.boards;
+    setBoards(boards);
+
+    return response;
+
+  }
+
+  const navigationColumnChanged = (board: boardType, navColIndex: number, event) => {
+
+    let boardSettings = navigationSettings?.boards.find(obj => { return obj.boardId === board.id });
+    let navSettings = navigationSettings || { accountId: null, boards: [] };
+    let oNavCol = {
+      columnIndex: navColIndex,
+      columnId: event.value,
+      columnLabel: event.label
+    };
+
+
+    if (!boardSettings) {
+      navSettings.boards.push({
+        boardId: board.id,
+        boardName: board.name,
+        navigationColumns: [oNavCol]
+      });
+    } else {
+      //TODO:
+      // boardSettings.navigationColumns.find()
+    }
+
+    setNavigationSettings(navSettings);
+
+
+  }
+
+  const saveSettings = () => {
+
+    monday.storage.setItem('navigationSettings', navigationSettings).then(res => {
+      console.log(res);
+    });
+
+
+  }
+
+
   useEffect(() => {
     // Notice this method notifies the monday platform that user gains a first value in an app.
     // Read more about it here: https://developer.monday.com/apps/docs/mondayexecute#value-created-for-user/
     monday.execute("valueCreatedForUser");
 
+    monday.get("settings").then(res => {
+      // monday.storage.getItem('navigationSettings').then(res => {
+      // debugger
+      // setNavigationSettings(res);
+      // });
+      // getBoards();
+
+    });
+
     // TODO: set up event listeners, Here`s an example, read more here: https://developer.monday.com/apps/docs/mondaylisten/
     monday.listen("context", (res) => {
+      debugger
       setContext(res.data);
-      getBoardItem(res.data);
+      switch (res.data.appFeature.type) {
+        case "AppFeatureAccountSettingsView":
+          getBoards(res.data);
+          break;
+
+        case "AppFeatureItemMenuAction":
+          getBoardItem(res.data);
+          break;
+
+        default:
+          break;
+      }
+
     });
+
   }, []);
 
   //Some example what you can do with context, read more here: https://developer.monday.com/apps/docs/mondayget#requesting-context-and-settings-data
   const attentionBoxText = `Hello man, your user_id is: ${context ? context.user.id : "still loading"
     }.
-  Let's start building your amazing app, which will change the world!!!`;
-
+  Amazing app, which will change the world!!!`;
 
   return (
     <div className="App">
-      <div>
+      {/* navigation settings */}
+      {boards &&
+        <div>
+          Choose navigation column for your boards:
+          {boards.map((board, i) => {
+            let options = useMemo(() => [board.columns.map(obj => { return { value: obj.id, label: obj.title } })], []);
+            return (
+              <div>
+                <span>
+                  {board.name}
+                </span>
+                <span>
+
+                  <Dropdown placeholder="select navigation column 1" options={options} onChange={(event) => {
+                    console.log(board)
+                    navigationColumnChanged(board, 1, event);
+                  }} />
+                  <Dropdown placeholder="select navigation column 2" options={options} onChange={(event) => {
+                    console.log(board)
+                    navigationColumnChanged(board, 2, event);
+
+                  }} />
+
+                </span>
+                <div>
+                </div>
+              </div>
+            )
+          })}
+          <Button onClick={saveSettings}>
+            SAVE
+          </Button>
+        </div>
+      }
+
+      {/* navigation settings */}
+      {boardItem &&
+        <button onClick={() => {
+          alert(`ok navigating to ${navigationValue}`);
+        }}>
+          navigate to {navigationValue}
+        </button>
+      }
+
+      {/* <div>
         {attentionBoxText} {boardItem?.name}
       </div>
 
@@ -91,13 +250,9 @@ function App() {
 
       }}>
         console log context
-      </button>
+      </button> */}
 
-      <button onClick={() => {
-        alert(`ok navigating to ${navigationValue}`);
-      }}>
-        navigate to {navigationValue}
-      </button>
+
 
     </div>
 
