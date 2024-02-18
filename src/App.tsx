@@ -55,7 +55,7 @@ function App() {
 
   const [boards, setBoards] = useState<boardType[] | null>(null); //all boards of current account
 
-  const [navigationSettings, setNavigationSettings] = useState<navigationSettingsType | null>({ accountId: null, boards: [] });
+  const [navigationSettings, setNavigationSettings] = useState<navigationSettingsType>({ accountId: null, boards: [] });
 
   // ---> board menu item
 
@@ -108,8 +108,6 @@ function App() {
         }
       }
     }`;
-
-    // monday.setToken("eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjMyMjM1Mzg4NywiYWFpIjoxMSwidWlkIjo1NTU5ODYzNiwiaWFkIjoiMjAyNC0wMi0xN1QyMTo0MzozMC4xNjBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjExOTIxNzksInJnbiI6ImV1YzEifQ.eLZRL9X84fYlRYIT9J2ejADsAUUvG6Y1IGh_E7MIaRg");
 
     const response = await monday.api(query);
     console.log(response);
