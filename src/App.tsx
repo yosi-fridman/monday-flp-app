@@ -51,18 +51,21 @@ function App() {
     }[]
   }
 
-  const [context, setContext] = useState<AppFeatureItemMenuActionContext | BaseContext | null>(null);
+  const [context, setContext] = useState<AppFeatureItemMenuActionContext | BaseContext | null>(null); //context in monday this app launched for
 
-  const [boards, setBoards] = useState<boardType[] | null>(null);
+  const [boards, setBoards] = useState<boardType[] | null>(null); //all boards of current account
 
-  const [boardItem, setBoardItem] = useState<boardItemType | null>(null);
+  const [navigationSettings, setNavigationSettings] = useState<navigationSettingsType | null>({ accountId: null, boards: [] });
 
-  const [navigationValue, setNavigationValue] = useState<string | null>(null);
+  // ---> board menu item
 
-  const [navigationSettings, setNavigationSettings] = useState<navigationSettingsType | null>(null);
+  const [boardItem, setBoardItem] = useState<boardItemType | null>(null); //current board item 
 
+  const [navigationValue, setNavigationValue] = useState<string | null>(null); //navigation value
 
-  const getBoardItem = async (boardItemContext: AppFeatureItemMenuActionContext) => {
+  // <--- board menu item
+
+  const getCurrentBoardItem = async (boardItemContext: AppFeatureItemMenuActionContext) => {
 
     const query: string = `query {
       items (ids: ${boardItemContext.itemId}) {
@@ -81,12 +84,12 @@ function App() {
     const response = await monday.api(query);
     console.log(response);
 
-    const item: boardItemType = response?.data?.items[0]
+    const item: boardItemType = response?.data?.items[0];
+    setBoardItem(item);
 
+    //TO DO: after retrieving curren board item, set its navigation values according to settings
     const oNavigationCol = item.column_values.find(obj => { return obj.column.title === "Notification Number" });
     const sNavigationValue = oNavigationCol?.text;
-
-    setBoardItem(item);
     setNavigationValue(sNavigationValue || null);
 
     return response;
@@ -119,15 +122,14 @@ function App() {
   }
 
   const navigationColumnChanged = (board: boardType, navColIndex: number, event) => {
-
-    let boardSettings = navigationSettings?.boards.find(obj => { return obj.boardId === board.id });
-    let navSettings = navigationSettings || { accountId: null, boards: [] };
+    debugger
+    let navSettings = navigationSettings;
+    let boardSettings = navSettings?.boards.find(obj => { return obj.boardId === board.id });
     let oNavCol = {
       columnIndex: navColIndex,
       columnId: event.value,
       columnLabel: event.label
     };
-
 
     if (!boardSettings) {
       navSettings.boards.push({
@@ -147,7 +149,7 @@ function App() {
 
   const saveSettings = () => {
 
-    monday.storage.setItem('navigationSettings', navigationSettings).then(res => {
+    monday.storage.setItem('navigationSettings', JSON.stringify(navigationSettings)).then(res => {
       console.log(res);
     });
 
@@ -161,12 +163,15 @@ function App() {
     monday.execute("valueCreatedForUser");
 
     monday.get("settings").then(res => {
-      // monday.storage.getItem('navigationSettings').then(res => {
-      // debugger
-      // setNavigationSettings(res);
-      // });
-      // getBoards();
+      debugger
 
+    });
+
+    monday.storage.getItem('navigationSettings').then(res => {
+      debugger
+      if (res.data.value) {
+        setNavigationSettings(JSON.parse(res.data.value));
+      }
     });
 
     // TODO: set up event listeners, Here`s an example, read more here: https://developer.monday.com/apps/docs/mondaylisten/
@@ -179,7 +184,7 @@ function App() {
           break;
 
         case "AppFeatureItemMenuAction":
-          getBoardItem(res.data);
+          getCurrentBoardItem(res.data);
           break;
 
         default:
@@ -202,7 +207,8 @@ function App() {
         <div>
           Choose navigation column for your boards:
           {boards.map((board, i) => {
-            let options = useMemo(() => [board.columns.map(obj => { return { value: obj.id, label: obj.title } })], []);
+            // let options = useMemo(() => [board.columns.map(obj => { return { value: obj.id, label: obj.title } })], []);
+            let options = board.columns.map(obj => { return { value: obj.id, label: obj.title } });
             return (
               <div>
                 <span>
